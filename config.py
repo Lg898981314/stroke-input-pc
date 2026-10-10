@@ -105,7 +105,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
     },
     "ui": {
-        "page_size": 9,
+        "page_size": 5,
         "candidate_font_size": 20,
         "key_font_size": 26,
         "show_status_indicator": True,

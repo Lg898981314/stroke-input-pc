@@ -9,7 +9,7 @@
 按键映射（按九宫格手机笔画输入法位置对应）：
     笔画（横/竖/撇/捺/折）：NumPad 小键盘 7/8/9/4/5
                             （对应手机九宫格 1/2/3/4/5 的位置）
-    选候选字（1-9）：       主键盘字母上方数字键 1-9
+    选候选字（1-5）：       主键盘字母上方数字键 1-5
     翻页：                 主键盘 - / = 或 PgUp/PgDn
     上屏首候选：           空格 / Enter
     删除最后一笔：         Backspace
@@ -170,6 +170,21 @@ def main() -> None:
     original_hide_event = vk.hideEvent
     original_change_event = vk.changeEvent
 
+    # 主题联动：虚拟键盘切换主题时，浮动窗口也跟着变
+    original_cycle_theme = vk.cycle_theme
+
+    def _on_theme_changed():
+        window.set_theme(vk._current_theme)
+
+    def vk_cycle_theme():
+        original_cycle_theme()
+        _on_theme_changed()
+
+    vk.cycle_theme = vk_cycle_theme
+
+    # 启动时同步主题
+    window.set_theme(vk._current_theme)
+
     def _refresh_floating():
         if last_state[0] is None:
             return
@@ -226,7 +241,9 @@ def main() -> None:
 
         if etype == "top_digit":
             idx = evt["value"] - 1
-            if 0 <= idx < 9:
+            # 根据配置的 page_size 决定范围
+            page_size = get_config().ui.get("page_size", 5)
+            if 0 <= idx < page_size:
                 if method.select_index(idx):
                     return True
                 return False
@@ -247,13 +264,13 @@ def main() -> None:
             return False
 
         if etype == "backspace":
-            if method.state.sequence or method.state.mode == "phrase":
+            if method.state.sequence or method.state.mode == "confirm":
                 method.backspace()
                 return True
             return False
 
         if etype == "escape":
-            if method.state.sequence or method.state.mode == "phrase":
+            if method.state.sequence or method.state.mode == "confirm":
                 method.escape()
                 return True
             return False

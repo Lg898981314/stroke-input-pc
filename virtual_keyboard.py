@@ -20,7 +20,7 @@ from PyQt5.QtGui import QFont, QColor
 import ctypes
 from ctypes import wintypes
 
-from stroke_input_method import StrokeInputMethod, InputState, MODE_PHRASE
+from stroke_input_method import StrokeInputMethod, InputState
 from stroke_data import STROKE_NAMES
 from config import get_config
 
@@ -772,9 +772,11 @@ class VirtualKeyboard(QWidget):
     # ---------- 状态更新 ----------
 
     def update_state(self, state: InputState) -> None:
-        is_phrase = (state.mode == MODE_PHRASE)
-        if is_phrase:
-            self.stroke_label.setText(f"联想：{state.last_char} ___")
+        from stroke_input_method import MODE_CONFIRM
+        is_confirm = (state.mode == MODE_CONFIRM)
+        if is_confirm:
+            # 字词混合候选模式：标题显示当前字
+            self.stroke_label.setText(f"{state.confirm_char} ___")
         else:
             seq_display = " ".join(STROKE_NAMES.get(c, c) for c in state.sequence)
             self.stroke_label.setText(f"笔画：{seq_display}")
