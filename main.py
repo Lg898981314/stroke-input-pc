@@ -264,13 +264,13 @@ def main() -> None:
             return False
 
         if etype == "backspace":
-            if method.state.sequence or method.state.mode == "confirm":
+            if method.state.sequence:
                 method.backspace()
                 return True
             return False
 
         if etype == "escape":
-            if method.state.sequence or method.state.mode == "confirm":
+            if method.state.sequence:
                 method.escape()
                 return True
             return False

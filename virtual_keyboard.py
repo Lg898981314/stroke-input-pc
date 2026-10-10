@@ -772,14 +772,8 @@ class VirtualKeyboard(QWidget):
     # ---------- 状态更新 ----------
 
     def update_state(self, state: InputState) -> None:
-        from stroke_input_method import MODE_CONFIRM
-        is_confirm = (state.mode == MODE_CONFIRM)
-        if is_confirm:
-            # 字词混合候选模式：标题显示当前字
-            self.stroke_label.setText(f"{state.confirm_char} ___")
-        else:
-            seq_display = " ".join(STROKE_NAMES.get(c, c) for c in state.sequence)
-            self.stroke_label.setText(f"笔画：{seq_display}")
+        seq_display = " ".join(STROKE_NAMES.get(c, c) for c in state.sequence)
+        self.stroke_label.setText(f"笔画：{seq_display}")
 
         page = state.current_page()
         for i, btn in enumerate(self.cand_buttons):

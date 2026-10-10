@@ -6,7 +6,6 @@
 - 上屏后自动隐藏
 - 支持多主题（跟随虚拟键盘的主题配色）
 """
-
 from __future__ import annotations
 
 from typing import Optional
@@ -17,7 +16,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QColor, QPalette, QCursor
 
-from stroke_input_method import InputState, STROKE_NAMES, MODE_CONFIRM
+from stroke_input_method import InputState, STROKE_NAMES
 from config import get_config
 
 # 默认主题（深色，和旧版一致）
@@ -159,22 +158,15 @@ class CandidateWindow(QWidget):
 
     def update_state(self, state: InputState) -> None:
         """根据输入法状态刷新窗口内容"""
-        is_confirm_mode = (state.mode == MODE_CONFIRM)
-        has_content = (is_confirm_mode and state.confirm_items) or \
-                      (not is_confirm_mode and (state.sequence or state.candidates))
+        has_content = state.sequence or state.candidates
 
         if not has_content:
             self.hide()
             return
 
-        if is_confirm_mode:
-            # 确认模式：标题显示当前字
-            head = state.confirm_char
-            self.stroke_label.setText(f"{head} ___")
-        else:
-            # 笔画模式：显示当前笔画序列
-            seq_display = " ".join(STROKE_NAMES.get(c, c) for c in state.sequence)
-            self.stroke_label.setText(f"笔画：{seq_display}")
+        # 显示当前笔画序列
+        seq_display = " ".join(STROKE_NAMES.get(c, c) for c in state.sequence)
+        self.stroke_label.setText(f"笔画：{seq_display}")
 
         # 候选项
         page = state.current_page()

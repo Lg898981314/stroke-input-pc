@@ -1,11 +1,8 @@
 """
-笔画输入法核心逻辑（字词混合候选模式）
+笔画输入法核心逻辑
 - 维护当前已输入的笔画序列
 - 按前缀查询候选字
-- 选字后进入"字词混合候选"模式：候选 = [单字] + 联想词组
-  - 选单字 → 直接上屏单字
-  - 选词组 → 直接上屏整个词组
-  - 都是一步确认，不需要两步
+- 选字后直接上屏
 """
 
 from __future__ import annotations
@@ -31,59 +28,37 @@ def get_key_to_stroke() -> dict:
 
 
 MODE_STROKE = "stroke"   # 笔画输入模式
-MODE_CONFIRM = "confirm"  # 字词混合候选模式（选字后，单字+联想词一起显示）
 
 
 @dataclass
 class InputState:
     """当前输入会话状态"""
-    # 笔画模式字段
     sequence: str = ""                          # 已输入笔画序列
     candidates: List[str] = field(default_factory=list)
     page_index: int = 0
-    # 模式
-    mode: str = MODE_STROKE                     # 'stroke' or 'confirm'
-    # 确认模式字段（字词混合候选）
-    confirm_char: str = ""                      # 当前待确认的单字
-    confirm_items: List[str] = field(default_factory=list)  # [单字, 词组1, 词组2, ...]
-    confirm_page: int = 0
-    # 历史记录
+    mode: str = MODE_STROKE                     # 只有笔画模式
     committed_chars: List[str] = field(default_factory=list)
 
-    def reset_stroke(self) -> None:
-        """清空笔画模式字段"""
+    def reset(self) -> None:
+        """清空所有输入状态"""
         self.sequence = ""
         self.candidates = []
         self.page_index = 0
 
-    def reset_confirm(self) -> None:
-        self.confirm_char = ""
-        self.confirm_items = []
-        self.confirm_page = 0
-        self.mode = MODE_STROKE
-
-    def reset_all(self) -> None:
-        self.reset_stroke()
-        self.reset_confirm()
-
     def current_page(self) -> List[str]:
-        """当前模式的当前页候选"""
+        """当前页候选"""
         page_size = get_page_size()
-        if self.mode == MODE_CONFIRM:
-            start = self.confirm_page * page_size
-            return self.confirm_items[start:start + page_size]
         start = self.page_index * page_size
         return self.candidates[start:start + page_size]
 
     def total_pages(self) -> int:
         page_size = get_page_size()
-        cands = self.confirm_items if self.mode == MODE_CONFIRM else self.candidates
-        if not cands:
+        if not self.candidates:
             return 0
-        return (len(cands) + page_size - 1) // page_size
+        return (len(self.candidates) + page_size - 1) // page_size
 
     def current_page_index(self) -> int:
-        return self.confirm_page if self.mode == MODE_CONFIRM else self.page_index
+        return self.page_index
 
 
 class StrokeInputMethod:
@@ -106,7 +81,7 @@ class StrokeInputMethod:
     def toggle(self) -> bool:
         self.enabled = not self.enabled
         if not self.enabled:
-            self.state.reset_all()
+            self.state.reset()
         if self._on_status_change:
             self._on_status_change(self.enabled)
         return self.enabled
@@ -124,28 +99,16 @@ class StrokeInputMethod:
         stroke = get_key_to_stroke().get(key)
         if not stroke:
             return False
-        # 如果在确认模式，先上屏当前字，再开始新字
-        if self.state.mode == MODE_CONFIRM:
-            self._commit_current_char()
-            self.state.reset_confirm()
         self.state.sequence += stroke
         self._refresh_candidates()
         return True
 
     def backspace(self) -> bool:
-        """删除最后一笔；确认模式下退回笔画模式"""
+        """删除最后一笔；无笔画时返回 False 由外部处理删文字"""
         if not self.enabled:
             return False
-        if self.state.mode == MODE_CONFIRM:
-            # 退回笔画模式，恢复之前的笔画候选
-            self.state.reset_confirm()
-            if self.state.sequence:
-                self._refresh_candidates()
-            else:
-                self._notify_candidates()
-            return True
         if not self.state.sequence:
-            return True  # 空的时候 Backspace 由外部处理（删已上屏文字）
+            return False  # 空的时候 Backspace 由外部处理（删已上屏文字）
         self.state.sequence = self.state.sequence[:-1]
         if self.state.sequence:
             self._refresh_candidates()
@@ -159,7 +122,7 @@ class StrokeInputMethod:
         """清空当前会话"""
         if not self.enabled:
             return False
-        self.state.reset_all()
+        self.state.reset()
         self._notify_candidates()
         return True
 
@@ -180,10 +143,7 @@ class StrokeInputMethod:
         if not self.state.current_page():
             return False
         if self.state.current_page_index() + 1 < self.state.total_pages():
-            if self.state.mode == MODE_CONFIRM:
-                self.state.confirm_page += 1
-            else:
-                self.state.page_index += 1
+            self.state.page_index += 1
             self._notify_candidates()
             return True
         return False
@@ -192,10 +152,7 @@ class StrokeInputMethod:
         if not self.state.current_page():
             return False
         if self.state.current_page_index() > 0:
-            if self.state.mode == MODE_CONFIRM:
-                self.state.confirm_page -= 1
-            else:
-                self.state.page_index -= 1
+            self.state.page_index -= 1
             self._notify_candidates()
             return True
         return False
@@ -203,72 +160,25 @@ class StrokeInputMethod:
     # ---------- 候选选择 ----------
 
     def select_index(self, idx: int) -> bool:
-        """选择当前页第 idx 个候选（idx 从 0 开始）
-        - 笔画模式：选字，进入确认模式（单字+联想词一起显示）
-        - 确认模式：选单字 → 上屏单字；选词组 → 上屏整个词组
-        """
+        """选择当前页第 idx 个候选（idx 从 0 开始），直接上屏"""
         if not self.enabled:
             return False
         page = self.state.current_page()
         if idx < 0 or idx >= len(page):
             return False
-
-        if self.state.mode == MODE_CONFIRM:
-            return self._select_confirm(idx, page[idx])
-
-        # 笔画模式：选字 → 进入确认模式
         char = page[idx]
-        self._enter_confirm_mode(char)
+        self._commit(char)
+        self.state.committed_chars.append(char)
+        self._memory.add(char)
+        self.state.reset()
+        self._notify_candidates()
         return True
 
     def select_first(self) -> bool:
-        """空格/回车：选第一个候选"""
+        """空格/回车：选第一个候选，直接上屏"""
         if not self.state.current_page():
             return False
-        # 笔画模式下，空格 = 选首字进入确认模式
-        # 确认模式下，空格 = 上屏首项（单字或词组）
         return self.select_index(0)
-
-    def _enter_confirm_mode(self, char: str) -> None:
-        """选字后进入字词混合候选模式"""
-        self.state.mode = MODE_CONFIRM
-        self.state.confirm_char = char
-        # 构建候选列表：第1个是单字本身，后面是联想词组
-        phrases = self._data.lookup_phrases(char)
-        items = [char] + phrases
-        # 用用户记忆排一下词组部分（单字固定在第1位）
-        if len(items) > 1:
-            word_part = items[1:]
-            word_part = self._memory.sort_items(word_part)
-            items = [char] + word_part
-        self.state.confirm_items = items
-        self.state.confirm_page = 0
-        # 清空笔画字段（笔画模式的数据保留在 sequence/candidates 里，Backspace 能退回）
-        self._notify_candidates()
-
-    def _select_confirm(self, idx: int, item: str) -> bool:
-        """确认模式下选择候选"""
-        if idx == 0:
-            # 选的是单字本身 → 上屏单字
-            self._commit(self.state.confirm_char)
-            self.state.committed_chars.append(self.state.confirm_char)
-            self._memory.add(self.state.confirm_char)
-        else:
-            # 选的是词组 → 直接上屏整个词组
-            self._commit(item)
-            self.state.committed_chars.append(item)
-            self._memory.add(item)
-        # 选完结束
-        self.state.reset_all()
-        self._notify_candidates()
-        return True
-
-    def _commit_current_char(self) -> None:
-        """确认模式下，上屏当前单字（比如用户开始打新字时）"""
-        if self.state.mode == MODE_CONFIRM and self.state.confirm_char:
-            self._commit(self.state.confirm_char)
-            self.state.committed_chars.append(self.state.confirm_char)
-            self._memory.add(self.state.confirm_char)
 
     def _commit(self, text: str) -> None:
         if self._on_commit:
