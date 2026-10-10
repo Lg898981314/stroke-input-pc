@@ -96,8 +96,6 @@ class CandidateWindow(QWidget):
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setAttribute(Qt.WA_TranslucentBackground, False)
 
-        self._apply_theme_style()
-
         # 布局：上方显示笔画序列，下方显示候选字
         outer = QVBoxLayout(self)
         outer.setContentsMargins(10, 6, 10, 6)
@@ -123,6 +121,7 @@ class CandidateWindow(QWidget):
             self.candidate_layout.addWidget(lbl)
             self.candidate_labels.append(lbl)
 
+        self._apply_theme_style()
         self.adjustSize()
 
     def _apply_theme_style(self):
