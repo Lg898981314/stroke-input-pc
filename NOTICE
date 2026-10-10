@@ -1,0 +1,97 @@
+==============================================================================
+                    笔画输入法 (Stroke Input Method for PC)
+                        第三方组件版权声明
+==============================================================================
+
+------------------------------------------------------------------------------
+关于本软件
+------------------------------------------------------------------------------
+
+  软件名称: 笔画输入法 (Stroke Input Method for PC)
+  版本: v1.0
+  本软件代码: 由开发者独立开发
+  本软件代码许可证: GNU General Public License v3 (GPL-3.0)
+
+  本软件的程序代码（包括但不限于 main.py、virtual_keyboard.py、
+  keyboard_hook.py、stroke_input_method.py、input_sender.py、
+  config.py、user_memory.py、candidate_window.py 等）
+  由开发者独立编写完成，采用 GPL-3.0 协议发布。
+
+  本软件同时使用了以下第三方开源组件和数据，特此声明。
+
+==============================================================================
+                    第三方组件列表
+==============================================================================
+
+------------------------------------------------------------------------------
+一、数据资源
+------------------------------------------------------------------------------
+
+1. Conway Stroke Data（笔画序列数据）
+   项目地址: https://github.com/stroke-input/stroke-input-data
+   作者: Conway (@yawnoc)
+
+   使用的文件及许可证:
+
+   a) sequence-characters.txt （笔画序列数据，6万+ 汉字）
+      许可证: Creative Commons Attribution 4.0 International (CC-BY-4.0)
+      网址: https://creativecommons.org/licenses/by/4.0/
+
+      根据 CC-BY-4.0 协议，您可以自由地：
+      - 共享 — 在任何媒介以任何形式复制、发行本作品
+      - 改编 — 修改、转换或以本作品为基础进行创作
+      （包括商业用途）
+
+      须遵守以下条件：
+      - 署名 — 必须给出适当的署名，提供指向许可协议的链接，
+        并标明是否对原始作品作了修改。
+
+      本软件对该数据的修改/使用说明：
+      - 构建了前缀索引用于加速候选字查询
+      - 按字频排序优化候选字显示顺序
+      - 存储格式转换为 JSON 以便快速加载
+
+   b) ranking-simplified.txt （简体字使用频率排名，2870 字）
+      许可证: CC0 1.0 通用 (公共领域 / Public Domain)
+      网址: https://creativecommons.org/publicdomain/zero/1.0/
+
+      作者已将本作品释放至公共领域，放弃一切著作权。
+      可自由使用，无需署名。
+
+   c) phrases-simplified.txt （简体中文常用词，2.9 万词组）
+      许可证: CC0 1.0 通用 (公共领域 / Public Domain)
+      网址: https://creativecommons.org/publicdomain/zero/1.0/
+
+      同上，公共领域，可自由使用。
+
+------------------------------------------------------------------------------
+二、代码库
+------------------------------------------------------------------------------
+
+1. PyQt5（GUI 应用程序框架）
+   项目地址: https://www.riverbankcomputing.com/software/pyqt/
+   作者: Riverbank Computing Limited
+   许可证: GNU General Public License v3 (GPL-3.0)
+   网址: https://www.gnu.org/licenses/gpl-3.0.html
+
+   本软件通过 GPL-3.0 协议使用 PyQt5，本软件自身代码也采用 GPL-3.0
+   协议发布，与 PyQt5 的许可证兼容。
+
+   PyQt5 源代码可在以下地址获取:
+   https://www.riverbankcomputing.com/software/pyqt/download
+
+2. Python 标准库
+   项目地址: https://www.python.org/
+   作者: Python Software Foundation
+   许可证: Python Software Foundation License (PSF License)
+   网址: https://docs.python.org/3/license.html
+
+   本软件仅调用 Python 标准库的 API，未分发 Python 解释器本身。
+
+==============================================================================
+
+本软件自身的程序代码采用 GNU General Public License v3 协议发布，
+详见 LICENSE 文件。
+
+如有任何版权问题，请联系开发者。
+==============================================================================
